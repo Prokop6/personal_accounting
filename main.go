@@ -1,84 +1,24 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 
 	_ "github.com/lib/pq"
 	"gopkg.in/yaml.v3"
+
+	data_structures "github.com/Prokop6/personal-accounting/internal/data_structures"
+
+	db_connections "github.com/Prokop6/personal-accounting/internal/db_connections"
+
+	io_operations "github.com/Prokop6/personal-accounting/internal/io_operations"
 )
-
-const (
-	host     = "192.168.1.18"
-	port     = 5432
-	user     = "root"
-	password = "12345"
-	dbname   = "accounting"
-)
-
-const sourceFilesDir = "/workspaces/personal_accounting/inputs"
-const archSubDir = "arch"
-const errorSubDir = "errors"
-
-func init_db_connection() {
-
-	connection_string := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-
-	db, err := sql.Open("postgres", connection_string)
-
-	if err != nil {
-		panic(err)
-	}
-
-	defer db.Close()
-
-	err = db.Ping()
-
-	if err != nil {
-		panic(err)
-	}
-
-}
-
-func list_files() ([]fs.DirEntry, error) {
-	dir, err := os.Open(sourceFilesDir)
-
-	if err != nil {
-
-		return nil, err
-	}
-
-	files, err := dir.ReadDir(0)
-
-	if err != nil {
-
-		return nil, err
-	}
-
-	file_list := make([]fs.DirEntry, 0)
-
-	for _, file := range files {
-
-		if file.IsDir() {
-
-			continue
-		}
-
-		file_list = append(file_list, file)
-
-	}
-
-	return file_list, nil
-
-}
 
 func main() {
-	init_db_connection()
+	db_connections.Init_db_connection()
 
-	files, err := list_files()
+	files, err := io_operations.List_files()
 
 	if err != nil {
 		panic(err)
@@ -86,51 +26,42 @@ func main() {
 
 	for _, file := range files {
 
-		_ = readYaml(file.Name(), sourceFilesDir)
+		_ = readYaml(file.Name(), io_operations.SourceFilesDir)
 
-
-		move_file(file.Name(), sourceFilesDir, archSubDir)
+		io_operations.Move_file(file.Name(), io_operations.SourceFilesDir, io_operations.ArchSubDir)
 		fmt.Println(file.Name())
 	}
-}
-
-func move_file(fileName string, sourceDir string, targetSubDir string) {
-	from := filepath.Join(sourceDir, fileName)
-	to := filepath.Join(sourceDir, targetSubDir, fileName)
-
-	os.Rename(from, to)
-
 }
 
 func vaildateFiles() {
 
 }
 
-func readYaml(fileName string, dirName string) *Transaction {
+func readYaml(fileName string, dirName string) *data_structures.Transaction {
 
-	var data Transaction
-	
+	var data data_structures.Transaction
+
 	fileFullPath := filepath.Join(dirName, fileName)
-	file, err :=	os.Open(fileFullPath)
+	file, err := os.Open(fileFullPath)
 
 	if err != nil {
-		move_file(fileName, dirName, errorSubDir)
+		io_operations.Move_file(fileName, dirName, io_operations.ErrorSubDir)
 		panic(err)
 	}
 
-	var fileContent	[]byte
+	var fileContent []byte
 
 	_, err = file.Read(fileContent)
 
 	if err != nil {
-		move_file(fileName, dirName, errorSubDir)
+		io_operations.Move_file(fileName, dirName, io_operations.ErrorSubDir)
 		panic(err)
 	}
 
 	err = yaml.Unmarshal(fileContent, &data)
 
 	if err != nil {
-		move_file(fileName, dirName, errorSubDir)
+		io_operations.Move_file(fileName, dirName, io_operations.ErrorSubDir)
 
 		panic(err)
 
@@ -138,19 +69,4 @@ func readYaml(fileName string, dirName string) *Transaction {
 
 	return &data
 
-}
-
-type Transaction struct {
-	Date string `yaml:"date"`
-	Shop string `yaml:"shop"`
-	Account string `yaml:"account"`
-	Method string `yaml:"method"`
-	Sum string `yaml:"sum"`
-	Items []Items `yaml:"items"`
-}
-
-type Items struct {
-	Name string `yaml:"name"`
-	Amount string `yaml:"amount"`
-	Price string `yaml:"price"`
 }
