@@ -34,8 +34,7 @@ func main() {
 			io_operations.Move_file(file.Name(), io_operations.SourceFilesDir, io_operations.ErrorSubDir)
 
 		}
-		
-		
+
 	}
 }
 

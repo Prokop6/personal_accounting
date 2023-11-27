@@ -17,11 +17,8 @@ func Move_file(fileName string, sourceDir string, targetSubDir string) {
 	os.Rename(from, to)
 }
 
-
 func List_files() ([]fs.DirEntry, error) {
 	dir, err := os.Open(SourceFilesDir)
-
-
 
 	if err != nil {
 
