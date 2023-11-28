@@ -13,7 +13,7 @@ const (
 	dbname   = "accounting"
 )
 
-func Init_db_connection() {
+func InitDBCconnection() (*sql.DB) {
 
 	connection_string := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
@@ -23,12 +23,13 @@ func Init_db_connection() {
 		panic(err)
 	}
 
-	defer db.Close()
 
 	err = db.Ping()
 
 	if err != nil {
 		panic(err)
 	}
+
+	return db
 
 }
