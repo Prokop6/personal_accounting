@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
-
 	_ "github.com/lib/pq"
 
 	db_connections "github.com/Prokop6/personal-accounting/internal/db_connections"
+	"github.com/Prokop6/personal-accounting/internal/db_operations"
 
 	io_operations "github.com/Prokop6/personal-accounting/internal/io_operations"
 
@@ -24,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	sqlStatement := `INSERT INTO public.transactions (date, partner, account, payment_method, currency, sum) VALUES ($1, $2, $3, $4, $5, $6);`
+	transactionInsertStatement := `INSERT INTO public.transactions (date, partner_id, account, payment_method, currency, sum) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;`
 
 	for _, file := range files {
 
@@ -35,15 +34,19 @@ func main() {
 		if isOk {
 			utils.Logger.Info("Adding record to database")
 
-			_, err = dbConnection.Exec(sqlStatement, transaction.GetDate(), transaction.GetPartnerName(), transaction.GetAccount(), transaction.GetMethod(), transaction.GetCurrency(), transaction.GetSum())
+			partnerID := db_operations.GetPartnerID(dbConnection, transaction.GetPartnerName())
+
+			utils.Logger.Info("Creating record for transaction")
+
+			_, err = dbConnection.Exec(transactionInsertStatement, transaction.GetDate(), partnerID, transaction.GetAccount(), transaction.GetMethod(), transaction.GetCurrency(), transaction.GetSum())
 
 			if err != nil {
 				utils.Logger.Error(err)
 				utils.Logger.Exit(1)
 			}
 
+			utils.Logger.Infof("Moving file %s to archive", file.Name())
 			io_operations.Move_file(file.Name(), io_operations.SourceFilesDir, io_operations.ArchSubDir)
-			fmt.Println(file.Name())
 
 		} else {
 			utils.Logger.Errorf("Found issue with file %s \n", file.Name())
@@ -53,7 +56,6 @@ func main() {
 		}
 
 		defer dbConnection.Close()
-
 
 	}
 }

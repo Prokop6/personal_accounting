@@ -3,6 +3,8 @@ package db_connections
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/Prokop6/personal-accounting/internal/utils"
 )
 
 const (
@@ -20,14 +22,13 @@ func InitDBCconnection() (*sql.DB) {
 	db, err := sql.Open("postgres", connection_string)
 
 	if err != nil {
-		panic(err)
+		utils.Logger.Fatal(err)
 	}
-
 
 	err = db.Ping()
 
 	if err != nil {
-		panic(err)
+		utils.Logger.Fatal(err)
 	}
 
 	return db
