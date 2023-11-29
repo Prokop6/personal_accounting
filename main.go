@@ -23,8 +23,6 @@ func main() {
 		panic(err)
 	}
 
-	transactionInsertStatement := `INSERT INTO public.transactions (date, partner_id, account, payment_method, currency, sum) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;`
-
 	for _, file := range files {
 
 		transaction := io_operations.ReadYaml(file.Name(), io_operations.SourceFilesDir)
@@ -38,12 +36,9 @@ func main() {
 
 			utils.Logger.Info("Creating record for transaction")
 
-			_, err = dbConnection.Exec(transactionInsertStatement, transaction.GetDate(), partnerID, transaction.GetAccount(), transaction.GetMethod(), transaction.GetCurrency(), transaction.GetSum())
+			transactionID := db_operations.CreateTransactionRecord(dbConnection, transaction, partnerID)
 
-			if err != nil {
-				utils.Logger.Error(err)
-				utils.Logger.Exit(1)
-			}
+			utils.Logger.Infof("%d", transactionID)
 
 			utils.Logger.Infof("Moving file %s to archive", file.Name())
 			io_operations.Move_file(file.Name(), io_operations.SourceFilesDir, io_operations.ArchSubDir)
