@@ -27,6 +27,18 @@ CONSTRAINT fk_partner_id
   REFERENCES partners(id)
 );
 
+CREATE TABLE transaction_items (
+  id bigserial primary key,
+  transaction_id bigserial NOT NULL,
+  name text NOT NULL,
+  item_id bigserial,
+  ammount NUMERIC(10,4) NOT NULL,
+  unit_price NUMERIC(10,2) NOT NULL,
+  CONSTRAINT fk_transaction_id
+    FOREIGN KEY(transaction_id)
+      REFERENCES transactions(id)
+);
+
 CREATE OR REPLACE VIEW transactions_view (
   Date, 
   Partner,
@@ -42,7 +54,31 @@ CREATE OR REPLACE VIEW transactions_view (
   ORDER BY date
   ;
 
+CREATE OR REPLACE FUNCTION find_or_create_partner(
+  p_short_name  text
+)
+RETURNS int AS 
+$$
+DECLARE
+  r_partner_id INT;
+BEGIN 
+  SELECT id INTO r_partner_id
+  FROM accounting.public.partners
+  WHERE short_name = p_short_name;
+
+  IF r_partner_id IS NULL THEN
+    INSERT INTO accounting.public.partners (short_name)
+    VALUES (p_short_name)
+    RETURNING id INTO r_partner_id;
+  END IF;
+
+return r_partner_id;
+END;
+$$
+LANGUAGE plpgsql;
+
 GRANT INSERT, SELECT on accounting.public.transactions to root;
+GRANT INSERT, SELECT on accounting.public.transaction_items to root;
 GRANT INSERT, SELECT on accounting.public.partners to root;
 GRANT USAGE, select on ALL SEQUENCES IN SCHEMA public to root;
 

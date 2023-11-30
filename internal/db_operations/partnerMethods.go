@@ -8,45 +8,18 @@ import (
 
 func GetPartnerID(con *sql.DB, name string) int32 {
 
-	partnerSelectStatement := `SELECT id, short_name FROM accounting.public.partners WHERE short_name = $1`
+	partnerIDStatement := `SELECT find_or_create_partner($1)`
 
-	partnerInsertStatement := `INSERT INTO public.partners
-	(short_name) SELECT $1 WHERE NOT EXISTS (SELECT short_name FROM public.partners WHERE short_name = $1) RETURNING id, short_name`
+	var partner_id int32
 
-	utils.Logger.Info("Searching for partner ID")
+	queryResult := con.QueryRow(partnerIDStatement, name)
 
-	queryRes := con.QueryRow(partnerSelectStatement,
-		name)
+	err := queryResult.Scan(&partner_id) 
 
-	var partnerID int32
-	var partnerShort string
-	err := queryRes.Scan(&partnerID, &partnerShort)
-
-	if err == sql.ErrNoRows {
-		statementResult, err := con.Query(partnerInsertStatement, name)
-
-		if err != nil {
-			utils.Logger.Error(err)
-			utils.Logger.Exit(1)
-		}
-
-		statementResult.Next()
-		err = statementResult.Scan(&partnerID, &partnerShort)
-
-		if err != nil {
-			utils.Logger.Error(err)
-			utils.Logger.Exit(1)
-		}
-
-		utils.Logger.Infof("Created record for %s with id %d", partnerShort,
-			partnerID)
-
-	} else {
-
-		utils.Logger.Infof("Found record for %s with id %d", partnerShort,
-			partnerID)
-
+	if err != nil {
+		utils.Logger.Error(err)
+		utils.Logger.Exit(1)
 	}
 
-	return partnerID
+	return partner_id
 }
