@@ -32,7 +32,7 @@ CREATE TABLE transaction_items (
   transaction_id bigserial NOT NULL,
   name text NOT NULL,
   item_id bigserial,
-  ammount NUMERIC(10,4) NOT NULL,
+  amount NUMERIC(10,4) NOT NULL,
   unit_price NUMERIC(10,2) NOT NULL,
   CONSTRAINT fk_transaction_id
     FOREIGN KEY(transaction_id)
@@ -53,29 +53,6 @@ CREATE OR REPLACE VIEW transactions_view (
   partners on transactions.partner_id = partners.id
   ORDER BY date
   ;
-
-CREATE OR REPLACE FUNCTION find_or_create_partner(
-  p_short_name  text
-)
-RETURNS int AS 
-$$
-DECLARE
-  r_partner_id INT;
-BEGIN 
-  SELECT id INTO r_partner_id
-  FROM accounting.public.partners
-  WHERE short_name = p_short_name;
-
-  IF r_partner_id IS NULL THEN
-    INSERT INTO accounting.public.partners (short_name)
-    VALUES (p_short_name)
-    RETURNING id INTO r_partner_id;
-  END IF;
-
-return r_partner_id;
-END;
-$$
-LANGUAGE plpgsql;
 
 GRANT INSERT, SELECT on accounting.public.transactions to root;
 GRANT INSERT, SELECT on accounting.public.transaction_items to root;

@@ -9,7 +9,7 @@ import (
 
 
 func CreateTransactionItemRecord (dbConn *sql.DB, transID int32, transItem data_structures.Items) {
-	sqlStatement := `INSERT INTO public.transaction_items (transaction_id, name, ammount, unit_price) VALUES ($1, $2, $3, $4)`
+	sqlStatement := `CALL create_transaction_item($1, $2, $3, $4)`
 
 	_, err := dbConn.Exec(sqlStatement,transID, transItem.Name, transItem.Amount, transItem.Price)  
 
